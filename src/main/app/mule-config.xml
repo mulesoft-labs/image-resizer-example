@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:core="http://www.mulesoft.org/schema/mule/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+    xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+    xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:smtp="http://www.mulesoft.org/schema/mule/smtp"
+    xmlns:sqs="http://www.mulesoft.org/schema/mule/sqs" xmlns:s3="http://www.mulesoft.org/schema/mule/s3"
+    xmlns:p="http://www.springframework.org/schema/p" xmlns:util="http://www.springframework.org/schema/util"
+    xmlns:context="http://www.springframework.org/schema/context" xmlns:spring="http://www.springframework.org/schema/beans"
+    xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" version="CE-3.4.0"
+    xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/smtp http://www.mulesoft.org/schema/mule/smtp/current/mule-smtp.xsd
+http://www.mulesoft.org/schema/mule/sqs http://www.mulesoft.org/schema/mule/sqs/current/mule-sqs.xsd
+http://www.mulesoft.org/schema/mule/s3 http://www.mulesoft.org/schema/mule/s3/current/mule-s3.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <configuration doc:name="Configuration">
+        <expression-language>
+            <import class="com.mortennobel.imagescaling.ResampleOp" />
+            <import class="org.mule.util.IOUtils" />
+            <import class="javax.mail.internet.ContentDisposition" />
+            <import class="javax.imageio.ImageIO" />
+            <import class="javax.activation.DataHandler" />
+            <import class="javax.mail.util.ByteArrayDataSource" />
+
+            <global-functions><![CDATA[
+              def getPartAsString(message, partName) {
+                IOUtils.toString(message.inboundAttachments[partName].content);
+              }
+              def getContentDispositionParameter(contentDispositionString, parameterName) {
+                new ContentDisposition(contentDispositionString).getParameter(parameterName);
+              }
+            ]]></global-functions>
+        </expression-language>
+    </configuration>
+
+    <http:connector name="multipartHttpConnector" doc:name="HTTP\HTTPS">
+        <service-overrides messageFactory="org.mule.transport.http.HttpMultipartMuleMessageFactory" />
+    </http:connector>
+
+    <smtp:connector name="smtpConnector" fromAddress="no-reply@no-domain.com"
+        replyToAddresses="no-reply@no-domain.com" doc:name="SMTP"/>
+
+    <s3:config name="s3Connector" accessKey="${aws.access.key.id}" secretKey="${aws.secret.access.key}" doc:name="Amazon S3"/>
+
+    <sqs:config name="sqsConnector" accessKey="${aws.access.key.id}" secretKey="${aws.secret.access.key}"
+        queueName="mule-image-resizer-in" doc:name="Amazon SQS">
+        <reconnect-forever blocking="false" frequency="5000" />
+    </sqs:config>
+
+    <flow name="resizerUi" doc:name="resizerUi">
+        <http:inbound-endpoint host="localhost" port="8080"
+            path="imageresizer/ui" doc:name="HTTP"/>
+        <http:static-resource-handler resourceBase="${app.home}/docroot"
+            defaultFile="index.html" />
+    </flow>
+
+    <flow name="resizerUpload" doc:name="resizerUpload">
+        <http:inbound-endpoint host="localhost" port="8080"
+            path="imageresizer/upload" doc:name="HTTP"/>
+
+        <s3:create-object bucketName="mule-image-resizer" key="#[message.id]"
+            contentType="#[message.inboundProperties['Content-Type']]" config-ref="s3Connector" doc:name="Amazon S3"/>
+
+        <expression-component doc:name="Expression"><![CDATA[
+            message.payload = [
+              'id':message.id,
+              'email':getPartAsString(message,'email'),
+              'width':getPartAsString(message,'width'),
+              'height':getPartAsString(message,'height'),
+              'filename':getContentDispositionParameter(message.inboundProperties['content-disposition'], 'filename'),
+              'contenttype': message.inboundProperties['Content-Type']
+            ];
+        ]]></expression-component>
+
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+
+        <sqs:send-message config-ref="sqsConnector" doc:name="Amazon SQS"/>
+
+        <logger level="INFO" message="Queued image for resizing with ID: #[message.id]" doc:name="Logger"/>
+
+        <response>
+            <set-property propertyName="Content-Type" value="text/plain" doc:name="Property"/>
+            <set-payload value="Thank you, check your email for the resized image..." doc:name="Set Payload"/>
+        </response>
+    </flow>
+
+    <flow name="resizerWorker" doc:name="resizerWorker">
+        <sqs:receive-messages visibilityTimeout="60" pollPeriod="15000"
+            numberOfMessages="10" config-ref="sqsConnector" doc:name="Amazon SQS (Streaming)"/>
+
+        <json:json-to-object-transformer returnClass="java.util.Map" doc:name="JSON to Object"/>
+
+        <set-variable variableName="meta" value="#[message.payload]"
+            doc:name="Set Meta Variable" />
+
+        <s3:get-object-content bucketName="mule-image-resizer" key="#[meta.id]" config-ref="s3Connector" doc:name="Amazon S3"/>
+
+        <expression-component doc:name="Expression"><![CDATA[
+          formatName = ImageIO.getImageReadersByMIMEType(meta.contenttype).next().formatName;
+          sourceImage = ImageIO.read(message.payload);
+          resampleOp = new ResampleOp(meta.width, meta.height);
+          rescaledImage = resampleOp.filter(sourceImage, null);
+          baos = new ByteArrayOutputStream();
+          ImageIO.write(rescaledImage, formatName, baos);
+          
+          ds = new ByteArrayDataSource(baos.toByteArray(), meta.contenttype);
+          ds.name = meta.width+'x'+meta.height+'-'+meta.filename;
+          message.outboundAttachments[ds.name] = new DataHandler(ds);
+        ]]></expression-component>
+
+        <set-payload
+            value="Your original image has been resized to #[meta.width]x#[meta.height]" doc:name="Set Payload"/>
+
+        <smtp:outbound-endpoint host="${smtp.host}" port="${smtp.port}"
+            to="#[meta.email]" subject="Resized Image" doc:name="SMTP"/>
+
+        <logger level="INFO" message="Sent resized image ID: #[meta.id] to: #[meta.email]" doc:name="Logger"/>
+
+        <s3:delete-object bucketName="mule-image-resizer" key="#[meta.id]" config-ref="s3Connector" doc:name="Amazon S3"/>
+    </flow>
+</mule>

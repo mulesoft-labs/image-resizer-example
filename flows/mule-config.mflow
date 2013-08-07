@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<mule-configuration xmlns="http://www.mulesoft.com/tooling/messageflow" name="mule-config">
+    <global-element name="Configuration" type="http://www.mulesoft.org/schema/mule/core/configuration" entity-id="Configuration#1">
+        <properties>
+            <property name="defaultExceptionStrategy-ref"/>
+            <property name="auxiliary;index" value="1"/>
+        </properties>
+    </global-element>
+    <global-element name="HTTP\HTTPS" type="org.mule.tooling.ui.modules.core.global.httpConnector" entity-id="HTTP\HTTPS#1">
+        <properties>
+            <property name="proxyUsername"/>
+            <property name="reuseAddress"/>
+            <property name="receiveBacklog"/>
+            <property name="enableCookies"/>
+            <property name="serverSoTimeout"/>
+            <property name="socketSoLinger"/>
+            <property name="clientSoTimeout"/>
+            <property name="validateConnections"/>
+            <property name="keepAlive"/>
+            <property name="label"/>
+            <property name="sendTcpNoDelay"/>
+            <property name="proxyPort"/>
+            <property name="cookieSpec"/>
+            <property name="dispatcherPoolFactory-ref"/>
+            <property name="proxyHostname"/>
+            <property name="receiveBufferSize"/>
+            <property name="name" value="multipartHttpConnector"/>
+            <property name="keepSendSocketOpen"/>
+            <property name="dynamicNotification"/>
+            <property name="sendBufferSize"/>
+            <property name="proxyPassword"/>
+            <property name="auxiliary;index" value="10"/>
+        </properties>
+    </global-element>
+    <global-element name="SMTP" type="http://www.mulesoft.org/schema/mule/smtp/connector" entity-id="SMTP#1">
+        <properties>
+            <property name="dispatcherPoolFactory-ref"/>
+            <property name="subject"/>
+            <property name="name" value="smtpConnector"/>
+            <property name="fromAddress" value="no-reply@no-domain.com"/>
+            <property name="bccAddresses"/>
+            <property name="validateConnections"/>
+            <property name="dynamicNotification"/>
+            <property name="contentType"/>
+            <property name="replyToAddresses" value="no-reply@no-domain.com"/>
+            <property name="auxiliary;index" value="12"/>
+            <property name="ccAddresses"/>
+        </properties>
+    </global-element>
+    <global-element name="Amazon S3" type="http://www.mulesoft.org/schema/mule/s3/config" entity-id="Amazon S3#1">
+        <properties>
+            <property name="proxyUsername"/>
+            <property name="accessKey" value="${aws.access.key.id}"/>
+            <property name="secretKey" value="${aws.secret.access.key}"/>
+            <property name="proxyHost"/>
+            <property name="name" value="s3Connector"/>
+            <property name="proxyPort"/>
+            <property name="proxyPassword"/>
+            <property name="auxiliary;index" value="13"/>
+        </properties>
+    </global-element>
+    <global-element name="Amazon SQS" type="http://www.mulesoft.org/schema/mule/sqs/config" entity-id="Amazon SQS#1">
+        <properties>
+            <property name="region"/>
+            <property name="accessKey" value="${aws.access.key.id}"/>
+            <property name="secretKey" value="${aws.secret.access.key}"/>
+            <property name="name" value="sqsConnector"/>
+            <property name="queueName" value="mule-image-resizer-in"/>
+            <property name="auxiliary;index" value="14"/>
+            <property-collection name="@http://www.mulesoft.org/schema/mule/core/reconnect-forever;0">
+                <property name="blocking" value="false"/>
+                <property name="isProcessed$$$$" value="true"/>
+                <property name="frequency" value="5000"/>
+                <property name="auxiliary;index" value="15"/>
+                <property name="auxiliary;wrapIn" value="15"/>
+            </property-collection>
+        </properties>
+    </global-element>
+    <flow SubFlow="false" name="resizerUi" entity-id="d03f73bc-63ae-4994-8f0f-cc9c9f6ad3a2">
+        <properties>
+            <property name="processingStrategy"/>
+            <property name="processingStrategy2"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+            <property name="auxiliary;index" value="16"/>
+        </properties>
+        <lane hadOnlyOneElement="false" index="0" isChoiceOtherwiseLane="false" entity-id="compartment-lane#1">
+            <graphicalData x="0" y="0" width="0" height="0"/>
+            <endpoint direction="Inbound" message-exchange-pattern="RequestResponse" name="HTTP" type="http://www.mulesoft.org/schema/mule/http/endpoint" entity-id="HTTP#1">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <properties>
+                    <property name="port" value="8080"/>
+                    <property name="host" value="localhost"/>
+                    <property name="businessEventsLabel"/>
+                    <property name="followRedirects"/>
+                    <property name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute" value="http://www.mulesoft.org/schema/mule/http/endpoint"/>
+                    <property name="keep-alive"/>
+                    <property name="contentType"/>
+                    <property name="disableTransportTransformer"/>
+                    <property name="password"/>
+                    <property name="exchange-pattern"/>
+                    <property name="tracking:enable-default-events"/>
+                    <property name="ref"/>
+                    <property name="transformer-refs"/>
+                    <property name="httpLabel"/>
+                    <property name="address"/>
+                    <property name="path" value="imageresizer/ui"/>
+                    <property name="encoding"/>
+                    <property name="responseTransformer-refs"/>
+                    <property name="method"/>
+                    <property name="user"/>
+                    <property name="responseTimeout"/>
+                    <property name="mimeType"/>
+                    <property name="auxiliary;index" value="17"/>
+                    <property name="connector-ref"/>
+                </properties>
+            </endpoint>
+            <unknown description="false" index="18" entity-id="unknown#1">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <content>&lt;http:static-resource-handler xmlns:http=&quot;http://www.mulesoft.org/schema/mule/http&quot; resourceBase=&quot;${app.home}/docroot&quot; defaultFile=&quot;index.html&quot;/&gt;</content>
+            </unknown>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="resizerUpload" entity-id="abe103ac-d54f-457e-90d7-725175efd160">
+        <properties>
+            <property name="processingStrategy"/>
+            <property name="processingStrategy2"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+            <property name="auxiliary;index" value="19"/>
+        </properties>
+        <lane hadOnlyOneElement="false" index="0" isChoiceOtherwiseLane="false" entity-id="compartment-lane#2">
+            <graphicalData x="0" y="0" width="0" height="0"/>
+            <endpoint direction="Inbound" message-exchange-pattern="RequestResponse" name="HTTP" type="http://www.mulesoft.org/schema/mule/http/endpoint" entity-id="HTTP#2">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <properties>
+                    <property name="port" value="8080"/>
+                    <property name="host" value="localhost"/>
+                    <property name="businessEventsLabel"/>
+                    <property name="followRedirects"/>
+                    <property name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute" value="http://www.mulesoft.org/schema/mule/http/endpoint"/>
+                    <property name="keep-alive"/>
+                    <property name="contentType"/>
+                    <property name="disableTransportTransformer"/>
+                    <property name="password"/>
+                    <property name="exchange-pattern"/>
+                    <property name="tracking:enable-default-events"/>
+                    <property name="ref"/>
+                    <property name="transformer-refs"/>
+                    <property name="httpLabel"/>
+                    <property name="address"/>
+                    <property name="path" value="imageresizer/upload"/>
+                    <property name="encoding"/>
+                    <property name="responseTransformer-refs"/>
+                    <property name="method"/>
+                    <property name="user"/>
+                    <property name="responseTimeout"/>
+                    <property name="mimeType"/>
+                    <property name="auxiliary;index" value="20"/>
+                    <property name="connector-ref"/>
+                </properties>
+            </endpoint>
+            <pattern name="Amazon S3" type="http://www.mulesoft.org/schema/mule/s3/s3-connector" entity-id="Amazon S3#2">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <properties>
+                    <property name="" value=""/>
+                    <property name="auxiliary;erased;contentLength" value="true"/>
+                    <property name="accessKey" value=""/>
+                    <property name="content-ref" value=""/>
+                    <property name="acl" value="PRIVATE"/>
+                    <property name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute" value="http://www.mulesoft.org/schema/mule/s3/create-object"/>
+                    <property name="contentType" value="#[message.inboundProperties['Content-Type']]"/>
+                    <property name="bucketName" value="mule-image-resizer"/>
+                    <property name="contentDisposition" value=""/>
+                    <property name="secretKey" value=""/>
+                    <property name="storageClass" value="STANDARD"/>
+                    <property name="updated"/>
+                    <property name="contentMd5" value=""/>
+                    <property name="contentLength" value=""/>
+                    <property name="config-ref" value="s3Connector"/>
+                    <property name="auxiliary;index" value="21"/>
+                    <property name="key" value="#[message.id]"/>
+                </properties>
+                <description></description>
+            </pattern>
+            <pattern name="Expression" type="http://www.mulesoft.org/schema/mule/core/expression-component" entity-id="Expression#1">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <properties>
+                    <property name="expression" value="&#xA;            message.payload = [&#xA;              'id':message.id,&#xA;              'email':getPartAsString(message,'email'),&#xA;              'width':getPartAsString(message,'width'),&#xA;              'height':getPartAsString(message,'height'),&#xA;              'filename':getContentDispositionParameter(message.inboundProperties['content-disposition'], 'filename'),&#xA;              'contenttype': message.inboundProperties['Content-Type']&#xA;            ];&#xA;        "/>
+                    <property name="file"/>
+                    <property name="evaluator"/>
+                    <property name="auxiliary;index" value="22"/>
+                </properties>
+            </pattern>
+            <pattern name="Object to JSON" type="http://www.mulesoft.org/schema/mule/json/object-to-json-transformer" entity-id="Object to JSON#1">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <properties>
+                    <property name="sourceClass"/>
+                    <property name="returnClass"/>
+                    <property name="ignoreBadInput"/>
+                    <property name="encoding"/>
+                    <property name="mapper-ref"/>
+                    <property name="mimeType"/>
+                    <property name="auxiliary;index" value="23"/>
+                </properties>
+            </pattern>
+            <pattern name="Amazon SQS" type="http://www.mulesoft.org/schema/mule/sqs/sqs-connector" entity-id="Amazon SQS#2">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <properties>
+                    <property name="message" value=""/>
+                    <property name="" value=""/>
+                    <property name="accessKey" value=""/>
+                    <property name="secretKey" value=""/>
+                    <property name="updated"/>
+                    <property name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute" value="http://www.mulesoft.org/schema/mule/sqs/send-message"/>
+                    <property name="queueName" value=""/>
+                    <property name="config-ref" value="sqsConnector"/>
+                    <property name="auxiliary;index" value="24"/>
+                </properties>
+                <description></description>
+            </pattern>
+            <pattern name="Logger" type="http://www.mulesoft.org/schema/mule/core/logger" entity-id="Logger#1">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <properties>
+                    <property name="message" value="Queued image for resizing with ID: #[message.id]"/>
+                    <property name="category"/>
+                    <property name="level" value="INFO"/>
+                    <property name="auxiliary;index" value="25"/>
+                </properties>
+            </pattern>
+            <response index="26" entity-id="response#1">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <compartment entity-id="compartment#1">
+                    <lane hadOnlyOneElement="false" index="0" isChoiceOtherwiseLane="false" entity-id="compartment-lane#3">
+                        <pattern name="Property" type="http://www.mulesoft.org/schema/mule/core/properties-transformer" entity-id="Property#1">
+                            <graphicalData x="0" y="0" width="0" height="0"/>
+                            <properties>
+<property name="propertyName" value="Content-Type"/>
+<property name="value" value="text/plain"/>
+<property name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute" value="http://www.mulesoft.org/schema/mule/core/set-property"/>
+<property name="auxiliary;index" value="27"/>
+                            </properties>
+                        </pattern>
+                        <pattern name="Set Payload" type="http://www.mulesoft.org/schema/mule/core/set-payload" entity-id="Set Payload#1">
+                            <graphicalData x="0" y="0" width="0" height="0"/>
+                            <properties>
+<property name="value" value="Thank you, check your email for the resized image..."/>
+<property name="auxiliary;index" value="28"/>
+                            </properties>
+                        </pattern>
+                    </lane>
+                </compartment>
+            </response>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="resizerWorker" entity-id="3e30a966-cfcd-4f56-ab53-d614147b8c6a">
+        <properties>
+            <property name="processingStrategy"/>
+            <property name="processingStrategy2"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+            <property name="auxiliary;index" value="29"/>
+        </properties>
+        <lane hadOnlyOneElement="false" index="0" isChoiceOtherwiseLane="false" entity-id="compartment-lane#4">
+            <graphicalData x="0" y="0" width="0" height="0"/>
+            <endpoint direction="Inbound" message-exchange-pattern="OneWay" name="Amazon SQS (Streaming)" type="http://www.mulesoft.org/schema/mule/sqs/endpoint" entity-id="Amazon SQS (Streaming)#1">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <properties>
+                    <property name="visibilityTimeout" value="60"/>
+                    <property name="pollPeriod" value="15000"/>
+                    <property name="preserveMessages" value="false"/>
+                    <property name="updated"/>
+                    <property name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute" value="http://www.mulesoft.org/schema/mule/sqs/receive-messages"/>
+                    <property name="numberOfMessages" value="10"/>
+                    <property name="config-ref" value="sqsConnector"/>
+                    <property name="auxiliary;index" value="30"/>
+                    <property name="exchange-pattern" value="one-way"/>
+                </properties>
+                <description></description>
+            </endpoint>
+            <pattern name="JSON to Object" type="http://www.mulesoft.org/schema/mule/json/json-to-object-transformer" entity-id="JSON to Object#1">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <properties>
+                    <property name="returnClass" value="java.util.Map"/>
+                    <property name="ignoreBadInput"/>
+                    <property name="encoding"/>
+                    <property name="mapper-ref"/>
+                    <property name="mimeType"/>
+                    <property name="auxiliary;index" value="31"/>
+                </properties>
+            </pattern>
+            <pattern name="Set Meta Variable" type="http://www.mulesoft.org/schema/mule/core/variable-transformer" entity-id="Variable#1">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <properties>
+                    <property name="variableName" value="meta"/>
+                    <property name="value" value="#[message.payload]"/>
+                    <property name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute" value="http://www.mulesoft.org/schema/mule/core/set-variable"/>
+                    <property name="auxiliary;index" value="32"/>
+                </properties>
+            </pattern>
+            <pattern name="Amazon S3" type="http://www.mulesoft.org/schema/mule/s3/s3-connector" entity-id="Amazon S3#3">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <properties>
+                    <property name="" value=""/>
+                    <property name="unmodifiedSince" value=""/>
+                    <property name="accessKey" value=""/>
+                    <property name="secretKey" value=""/>
+                    <property name="updated"/>
+                    <property name="modifiedSince" value=""/>
+                    <property name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute" value="http://www.mulesoft.org/schema/mule/s3/get-object-content"/>
+                    <property name="versionId" value=""/>
+                    <property name="config-ref" value="s3Connector"/>
+                    <property name="bucketName" value="mule-image-resizer"/>
+                    <property name="auxiliary;index" value="33"/>
+                    <property name="key" value="#[meta.id]"/>
+                </properties>
+                <description></description>
+            </pattern>
+            <pattern name="Expression" type="http://www.mulesoft.org/schema/mule/core/expression-component" entity-id="Expression#2">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <properties>
+                    <property name="expression" value="&#xA;          formatName = ImageIO.getImageReadersByMIMEType(meta.contenttype).next().formatName;&#xA;          sourceImage = ImageIO.read(message.payload);&#xA;          resampleOp = new ResampleOp(meta.width, meta.height);&#xA;          rescaledImage = resampleOp.filter(sourceImage, null);&#xA;          baos = new ByteArrayOutputStream();&#xA;          ImageIO.write(rescaledImage, formatName, baos);&#xA;          &#xA;          ds = new ByteArrayDataSource(baos.toByteArray(), meta.contenttype);&#xA;          ds.name = meta.width+'x'+meta.height+'-'+meta.filename;&#xA;          message.outboundAttachments[ds.name] = new DataHandler(ds);&#xA;        "/>
+                    <property name="file"/>
+                    <property name="evaluator"/>
+                    <property name="auxiliary;index" value="34"/>
+                </properties>
+            </pattern>
+            <pattern name="Set Payload" type="http://www.mulesoft.org/schema/mule/core/set-payload" entity-id="Set Payload#2">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <properties>
+                    <property name="value" value="Your original image has been resized to #[meta.width]x#[meta.height]"/>
+                    <property name="auxiliary;index" value="35"/>
+                </properties>
+            </pattern>
+            <endpoint direction="Outbound" message-exchange-pattern="OneWay" name="SMTP" type="http://www.mulesoft.org/schema/mule/smtps/endpoint" entity-id="SMTP#2">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <properties>
+                    <property name="port" value="${smtp.port}"/>
+                    <property name="to" value="#[meta.email]"/>
+                    <property name="host" value="${smtp.host}"/>
+                    <property name="businessEventsLabel"/>
+                    <property name="subject" value="Resized Image"/>
+                    <property name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute" value="http://www.mulesoft.org/schema/mule/smtp/endpoint"/>
+                    <property name="bcc"/>
+                    <property name="from"/>
+                    <property name="disableTransportTransformer"/>
+                    <property name="password"/>
+                    <property name="tracking:enable-default-events"/>
+                    <property name="exchange-pattern" value="one-way"/>
+                    <property name="ref"/>
+                    <property name="transformer-refs"/>
+                    <property name="replyTo"/>
+                    <property name="address"/>
+                    <property name="encoding"/>
+                    <property name="user"/>
+                    <property name="mimeType"/>
+                    <property name="responseTimeout"/>
+                    <property name="auxiliary;index" value="36"/>
+                    <property name="cc"/>
+                    <property name="connector-ref"/>
+                </properties>
+            </endpoint>
+            <pattern name="Logger" type="http://www.mulesoft.org/schema/mule/core/logger" entity-id="Logger#2">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <properties>
+                    <property name="message" value="Sent resized image ID: #[meta.id] to: #[meta.email]"/>
+                    <property name="category"/>
+                    <property name="level" value="INFO"/>
+                    <property name="auxiliary;index" value="37"/>
+                </properties>
+            </pattern>
+            <pattern name="Amazon S3" type="http://www.mulesoft.org/schema/mule/s3/s3-connector" entity-id="Amazon S3#4">
+                <graphicalData x="0" y="0" width="0" height="0"/>
+                <properties>
+                    <property name="" value=""/>
+                    <property name="accessKey" value=""/>
+                    <property name="secretKey" value=""/>
+                    <property name="updated"/>
+                    <property name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute" value="http://www.mulesoft.org/schema/mule/s3/delete-object"/>
+                    <property name="versionId" value=""/>
+                    <property name="config-ref" value="s3Connector"/>
+                    <property name="bucketName" value="mule-image-resizer"/>
+                    <property name="auxiliary;index" value="38"/>
+                    <property name="key" value="#[meta.id]"/>
+                </properties>
+                <description></description>
+            </pattern>
+        </lane>
+    </flow>
+</mule-configuration>
