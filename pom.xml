@@ -9,7 +9,7 @@
     <name>Mule Image Resizer</name>
 
     <properties>
-        <mule.version>3.4.0</mule.version>
+        <mule.version>3.8.0</mule.version>
         <spring.version>3.2.1.RELEASE</spring.version>
     </properties>
 
